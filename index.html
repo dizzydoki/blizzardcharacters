@@ -2,183 +2,194 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Blizzard Username Character Table</title>
+<title>Blizzard Character Grid</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f4f6f8;
-        padding: 20px;
-    }
-    h1 {
-        color: #333;
-    }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        background: white;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    th, td {
-        border-bottom: 1px solid #eee;
-        padding: 10px;
-        text-align: center;
-    }
-    th {
-        background: #4a90e2;
-        color: white;
-        font-weight: normal;
-    }
-    tr:hover {
-        background: #f9f9f9;
-    }
-    button {
-        border: none;
-        background: none;
-        cursor: pointer;
-        padding: 5px;
-        font-size: 1em;
-    }
-    .copy-btn:hover {
-        color: #4a90e2;
-    }
-    .edit-btn:hover {
-        color: #f39c12;
-    }
-    .delete-btn:hover {
-        color: #e74c3c;
-    }
-    .form-container {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    input, textarea {
-        padding: 8px;
-        margin-right: 8px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-    .add-btn {
-        background: #4a90e2;
-        color: white;
-        padding: 8px 12px;
-        border-radius: 4px;
-    }
-    .add-btn:hover {
-        background: #357abd;
-    }
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    padding: 20px;
+    zoom: 0.9; /* Zoomed out */
+}
+h1 { color: #333; margin-bottom: 10px; }
+.form-container {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+input, textarea, button, label {
+    padding: 8px;
+    margin: 5px 5px 5px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+button.add-btn { background: #4a90e2; color: white; }
+button.add-btn:hover { background: #357abd; }
+#toolbar { margin: 10px 0; }
+#charGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.char-tile {
+    width: 50px;
+    height: 50px;
+    background: white;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    text-align: center;
+    line-height: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.char-tile:hover { transform: scale(1.1); border-color: #4a90e2; }
+.char-tile span.tooltip {
+    visibility: hidden;
+    background: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 4px 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    white-space: nowrap;
+}
+.char-tile:hover span.tooltip { visibility: visible; }
+#results { margin-top: 15px; font-size: 14px; }
 </style>
 </head>
 <body>
 
-<h1>Blizzard Username Character Table</h1>
+<h1>Blizzard Character Grid</h1>
 
 <div class="form-container">
     <input type="text" id="charInput" maxlength="2" placeholder="Character">
     <input type="text" id="nameInput" placeholder="Unicode Name (optional)">
     <button class="add-btn" onclick="addCharacter()">Add Character</button>
-    <br><br>
-    <textarea id="massInput" rows="3" placeholder="Paste multiple characters here for mass add..."></textarea>
+    <br>
+    <textarea id="massInput" rows="2" placeholder="Paste multiple characters here..."></textarea>
     <button class="add-btn" onclick="massAdd()">Mass Add</button>
+    <br><br>
+    <input type="file" id="imgUpload" accept="image/png">
+    <button class="add-btn" onclick="processImage()">Find Matches in PNG</button>
 </div>
 
-<table id="charTable">
-    <thead>
-        <tr>
-            <th>Character</th>
-            <th>Unicode Name</th>
-            <th>Copy</th>
-            <th>Edit</th>
-            <th>Delete</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
+<div id="toolbar">
+    <label><input type="checkbox" id="editMode"> Edit Mode</label>
+    <label><input type="checkbox" id="deleteMode"> Delete Mode</label>
+</div>
+
+<div id="charGrid"></div>
+<div id="results"></div>
 
 <script>
-// Try loading from local storage
 let characters = JSON.parse(localStorage.getItem("blizzardChars")) || [
-    { char: "á", name: "Latin Small Letter A Acute" },
-    { char: "à", name: "Latin Small Letter A Grave" },
-    { char: "â", name: "Latin Small Letter A Circumflex" },
-    { char: "ä", name: "Latin Small Letter A Diaeresis" },
-    { char: "é", name: "Latin Small Letter E Acute" }
+    { char: "á", name: "LATIN SMALL LETTER A WITH ACUTE" },
+    { char: "à", name: "LATIN SMALL LETTER A WITH GRAVE" },
+    { char: "â", name: "LATIN SMALL LETTER A WITH CIRCUMFLEX" }
 ];
 
 function getUnicodeName(char) {
-    let code = char.codePointAt(0).toString(16).toUpperCase();
-    return `U+${code} ${char}`; // Fallback format
+    const code = char.codePointAt(0).toString(16).toUpperCase();
+    return `U+${code} ${char}`;
 }
 
-function renderTable() {
-    const tbody = document.querySelector("#charTable tbody");
-    tbody.innerHTML = "";
-    characters.forEach((item, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>${item.char}</td>
-            <td>${item.name}</td>
-            <td><button class="copy-btn" onclick="copyChar('${item.char}')">📋</button></td>
-            <td><button class="edit-btn" onclick="editCharacter(${index})">✏️</button></td>
-            <td><button class="delete-btn" onclick="deleteCharacter(${index})">🗑️</button></td>
+function sortCharacters() {
+    characters.sort((a,b) => a.char.localeCompare(b.char));
+}
+
+function renderGrid(highlight=[]) {
+    sortCharacters();
+    const grid = document.getElementById("charGrid");
+    grid.innerHTML = "";
+    const editMode = document.getElementById("editMode").checked;
+    const deleteMode = document.getElementById("deleteMode").checked;
+
+    characters.forEach((item,index)=>{
+        const tile = document.createElement("div");
+        tile.className = "char-tile";
+        tile.innerHTML = `
+            ${item.char}
+            <span class="tooltip">${item.name}</span>
         `;
-        tbody.appendChild(row);
+        if (highlight.includes(item.char)) {
+            tile.style.background = "#ffff99";
+        }
+        tile.onclick = ()=>{
+            if(editMode) {
+                editChar(index);
+            } else if(deleteMode) {
+                deleteChar(index);
+            } else {
+                copyChar(item.char);
+            }
+        };
+        grid.appendChild(tile);
     });
 }
 
-function copyChar(c) {
-    navigator.clipboard.writeText(c);
-    alert(`Copied: ${c}`);
-}
+// Copy
+function copyChar(c) { navigator.clipboard.writeText(c); alert(`Copied: ${c}`); }
 
-function addCharacter() {
+// Add
+function addCharacter(){
     const charVal = document.getElementById("charInput").value.trim();
     let nameVal = document.getElementById("nameInput").value.trim();
     if (!charVal) return;
     if (!nameVal) nameVal = getUnicodeName(charVal);
-    characters.push({ char: charVal, name: nameVal });
-    document.getElementById("charInput").value = "";
-    document.getElementById("nameInput").value = "";
-    renderTable();
+    characters.push({char:charVal,name:nameVal});
+    document.getElementById("charInput").value=""; document.getElementById("nameInput").value="";
+    renderGrid();
 }
 
-function massAdd() {
-    const chars = document.getElementById("massInput").value.trim();
-    if (!chars) return;
-    for (let c of chars) {
-        characters.push({ char: c, name: getUnicodeName(c) });
-    }
-    document.getElementById("massInput").value = "";
-    renderTable();
+// Mass add
+function massAdd(){
+    const input = document.getElementById("massInput").value.trim();
+    if(!input) return;
+    for(let c of input) { characters.push({char:c,name:getUnicodeName(c)}); }
+    document.getElementById("massInput").value="";
+    renderGrid();
 }
 
-function editCharacter(index) {
-    const newChar = prompt("Enter new character:", characters[index].char);
-    let newName = prompt("Enter new name:", characters[index].name);
-    if (newChar) {
-        if (!newName) newName = getUnicodeName(newChar);
-        characters[index] = { char: newChar, name: newName };
-        renderTable();
-    }
+// Edit/Delete
+function editChar(i){
+    const newChar = prompt("New character:", characters[i].char);
+    let newName = prompt("New name:", characters[i].name);
+    if(newChar){ if(!newName) newName=getUnicodeName(newChar); characters[i]={char:newChar,name:newName}; renderGrid(); }
 }
-
-function deleteCharacter(index) {
-    if (confirm("Are you sure you want to delete this character?")) {
-        characters.splice(index, 1);
-        renderTable();
-    }
-}
+function deleteChar(i){ if(confirm("Delete?")){ characters.splice(i,1); renderGrid(); } }
 
 // Auto-save every 5 seconds
-setInterval(() => {
-    localStorage.setItem("blizzardChars", JSON.stringify(characters));
-}, 5000);
+setInterval(()=>{ localStorage.setItem("blizzardChars",JSON.stringify(characters)); },5000);
 
-renderTable();
+// PNG processing
+function processImage(){
+    const fileInput = document.getElementById("imgUpload");
+    if(!fileInput.files[0]) return alert("Select a PNG first!");
+    const reader = new FileReader();
+    reader.onload = function(){
+        Tesseract.recognize(reader.result,'eng',{logger:m=>console.log(m)}).then(({data:{text}})=>{
+            const cleaned = text.replace(/\s/g,''); 
+            const found = [];
+            for(let c of cleaned){
+                if(characters.some(x=>x.char===c)) found.push(c);
+            }
+            document.getElementById("results").innerHTML = found.length ? "Matches: "+found.join(", ") : "No matches found";
+            renderGrid(found);
+        });
+    }
+    reader.readAsDataURL(fileInput.files[0]);
+}
+
+renderGrid();
 </script>
 
 </body>
