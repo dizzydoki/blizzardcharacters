@@ -153,10 +153,12 @@ function addCharacter(){
 // Mass add
 function massAdd(){
     const input = document.getElementById("massInput").value.trim();
-    if(!input) return;
-    for(let c of input) { characters.push({char:c,name:getUnicodeName(c)}); }
-    document.getElementById("massInput").value="";
-    renderGrid();
+ for(let c of input) {
+    if(c.trim() !== "") { // skip empty/whitespace characters
+        characters.push({char:c, name:getUnicodeName(c)});
+    }
+}
+
 }
 
 // Edit/Delete
