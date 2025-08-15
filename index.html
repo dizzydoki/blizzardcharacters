@@ -1,163 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Character Manager</title>
 <style>
-    body {
-        margin: 0;
-        font-family: Arial, sans-serif;
-        background: #111;
-        color: white;
-    }
+  body {
+    background: white;
+    font-family: sans-serif;
+  }
 
-    /* Top-right fixed action buttons */
-    .top-buttons {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        display: flex;
-        gap: 10px;
-        z-index: 1000;
-    }
-    .top-buttons button {
-        padding: 8px 14px;
-        background: #ff4081;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        color: white;
-        font-weight: bold;
-    }
-    .top-buttons button:hover {
-        background: #ff5a9d;
-    }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+  }
 
-    /* Scrollable horizontal container */
-    .card-container {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        padding: 70px 10px 10px; /* padding-top for buttons */
-        scrollbar-width: thin;
-        scrollbar-color: #555 transparent;
-    }
-    .card-container::-webkit-scrollbar {
-        height: 6px;
-    }
-    .card-container::-webkit-scrollbar-thumb {
-        background: #555;
-        border-radius: 3px;
-    }
+  .card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    position: relative;
+    text-align: center;
+    font-size: 2rem;
+    background: white;
+  }
 
-    /* Individual cards */
-    .card {
-        position: relative;
-        width: 150px;
-        height: 200px;
-        border-radius: 10px;
-        overflow: hidden;
-        flex-shrink: 0;
-        background: #222;
-        cursor: pointer;
-        transition: transform 0.2s ease;
-    }
-    .card:hover {
-        transform: scale(1.05);
-    }
+  .card-buttons {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+  }
 
-    /* Character image */
-    .card img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+  .card-buttons button {
+    background: #eee;
+    border: none;
+    padding: 3px 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    border-radius: 4px;
+  }
 
-    /* Hover overlay for details */
-    .card-details {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        background: rgba(0, 0, 0, 0.7);
-        padding: 8px;
-        font-size: 14px;
-        opacity: 0;
-        transition: opacity 0.2s ease;
-    }
-    .card:hover .card-details {
-        opacity: 1;
-    }
-
-    /* Checkbox for selection */
-    .card-checkbox {
-        position: absolute;
-        top: 5px;
-        left: 5px;
-        transform: scale(1.3);
-    }
+  .card input[type="checkbox"] {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+  }
 </style>
-</head>
-<body>
 
-<!-- Fixed top-right buttons -->
-<div class="top-buttons">
-    <button onclick="editSelected()">Edit</button>
-    <button onclick="deleteSelected()">Delete</button>
+<div class="grid">
+  <div class="card">
+    <input type="checkbox">
+    <div class="card-buttons">
+      <button>Edit</button>
+      <button>Del</button>
+    </div>
+    🐱
+  </div>
+  <div class="card">
+    <input type="checkbox">
+    <div class="card-buttons">
+      <button>Edit</button>
+      <button>Del</button>
+    </div>
+    🐶
+  </div>
+  <div class="card">
+    <input type="checkbox">
+    <div class="card-buttons">
+      <button>Edit</button>
+      <button>Del</button>
+    </div>
+    🐻
+  </div>
 </div>
-
-<!-- Horizontal card container -->
-<div class="card-container" id="cardContainer">
-    <!-- Cards inserted dynamically -->
-</div>
-
-<script>
-    // Example characters
-    const characters = [
-        { name: "Alice", image: "https://via.placeholder.com/150?text=Alice" },
-        { name: "Bob", image: "https://via.placeholder.com/150?text=Bob" },
-        { name: "Charlie", image: "https://via.placeholder.com/150?text=Charlie" },
-        { name: "David", image: "https://via.placeholder.com/150?text=David" }
-    ];
-
-    // Sort alphabetically
-    characters.sort((a, b) => a.name.localeCompare(b.name));
-
-    const container = document.getElementById("cardContainer");
-
-    // Create card elements
-    characters.forEach(char => {
-        const card = document.createElement("div");
-        card.classList.add("card");
-        card.innerHTML = `
-            <input type="checkbox" class="card-checkbox">
-            <img src="${char.image}" alt="${char.name}">
-            <div class="card-details">${char.name}</div>
-        `;
-        container.appendChild(card);
-    });
-
-    // Edit function
-    function editSelected() {
-        const selected = getSelectedCards();
-        alert("Edit: " + selected.join(", "));
-    }
-
-    // Delete function
-    function deleteSelected() {
-        const selected = getSelectedCards();
-        alert("Delete: " + selected.join(", "));
-    }
-
-    // Get selected names
-    function getSelectedCards() {
-        const checkboxes = document.querySelectorAll(".card-checkbox:checked");
-        return Array.from(checkboxes).map(cb => 
-            cb.parentElement.querySelector(".card-details").textContent
-        );
-    }
-</script>
-
-</body>
-</html>
