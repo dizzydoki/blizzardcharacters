@@ -1,142 +1,150 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Character List</title>
 <style>
     body {
         font-family: Arial, sans-serif;
         background: white;
         color: black;
-        margin: 20px;
+        margin: 0;
+        padding: 0;
     }
-    h1 {
-        font-size: 1.5rem;
+    .container {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
-    #inputSection {
+    .input-section {
         display: flex;
         gap: 10px;
-        margin-bottom: 20px;
     }
-    #charInput {
-        flex: 1;
+    input {
         padding: 10px;
-        border-radius: 10px;
+        font-size: 16px;
         border: 1px solid #ccc;
+        border-radius: 12px;
+        flex: 1;
         outline: none;
-        font-size: 1rem;
-        transition: all 0.2s ease;
+        transition: 0.2s;
     }
-    #charInput:focus {
-        border-color: #007BFF;
-        box-shadow: 0px 0px 5px rgba(0,123,255,0.3);
+    input:focus {
+        border-color: #888;
     }
     button {
         padding: 10px 14px;
+        font-size: 14px;
         border: none;
         border-radius: 8px;
         cursor: pointer;
-        font-size: 0.9rem;
+        background: #eee;
         transition: background 0.2s;
     }
-    .addBtn {
-        background: #007BFF;
-        color: white;
+    button:hover {
+        background: #ddd;
     }
-    .addBtn:hover {
-        background: #0056b3;
-    }
-    .charList {
+    .char-section {
         display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+        gap: 40px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 10px;
     }
-    .charItem {
+    .letter-block {
+        min-width: 60px;
+    }
+    .char-item {
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: space-between;
+        gap: 5px;
+        margin-bottom: 6px;
         padding: 6px 10px;
         border: 1px solid #ccc;
         border-radius: 8px;
+        background: white;
+        transition: 0.2s;
+    }
+    .char-item:hover {
         background: #f9f9f9;
     }
-    .charText {
-        font-size: 1.2rem;
-    }
-    .copyBtn, .deleteBtn {
-        background: #eee;
-    }
-    .copyBtn:hover {
-        background: #cce5ff;
-    }
-    .deleteBtn:hover {
-        background: #ffcccc;
+    .char-buttons {
+        display: flex;
+        gap: 5px;
     }
 </style>
 </head>
 <body>
 
-<h1>Character List</h1>
-
-<div id="inputSection">
-    <input type="text" id="charInput" placeholder="Enter characters (comma or space separated)">
-    <button class="addBtn" onclick="addCharacters()">Add</button>
+<div class="container">
+    <div class="input-section">
+        <input type="text" id="charInput" placeholder="Enter character name">
+        <button onclick="addCharacter()">Add</button>
+    </div>
+    <div class="char-section" id="charSection"></div>
 </div>
 
-<div class="charList" id="charList"></div>
-
 <script>
-    const charListEl = document.getElementById('charList');
-    let characters = [];
+let characters = {};
 
-    function addCharacters() {
-        const input = document.getElementById('charInput').value.trim();
-        if (!input) return;
-        
-        const newChars = input.split(/[\s,]+/).filter(c => c.trim() !== '');
-        characters.push(...newChars);
-        characters = [...new Set(characters)]; // remove duplicates
-        characters.sort();
-        document.getElementById('charInput').value = '';
-        renderCharacters();
+function addCharacter() {
+    const name = document.getElementById("charInput").value.trim();
+    if (!name) return;
+    const firstLetter = name[0].toUpperCase();
+
+    if (!characters[firstLetter]) {
+        characters[firstLetter] = [];
     }
+    characters[firstLetter].push(name);
+    characters[firstLetter].sort((a, b) => a.localeCompare(b));
 
-    function renderCharacters() {
-        charListEl.innerHTML = '';
-        characters.forEach(char => {
-            const charDiv = document.createElement('div');
-            charDiv.className = 'charItem';
+    document.getElementById("charInput").value = "";
+    renderCharacters();
+}
 
-            const charSpan = document.createElement('span');
-            charSpan.className = 'charText';
-            charSpan.textContent = char;
+function deleteCharacter(letter, index) {
+    characters[letter].splice(index, 1);
+    if (characters[letter].length === 0) {
+        delete characters[letter];
+    }
+    renderCharacters();
+}
 
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'copyBtn';
-            copyBtn.textContent = 'Copy';
-            copyBtn.onclick = () => copyToClipboard(char);
+function copyCharacter(name) {
+    navigator.clipboard.writeText(name).then(() => {
+        alert(`Copied: ${name}`);
+    });
+}
 
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'deleteBtn';
-            deleteBtn.textContent = 'Delete';
-            deleteBtn.onclick = () => deleteCharacter(char);
+function renderCharacters() {
+    const section = document.getElementById("charSection");
+    section.innerHTML = "";
 
-            charDiv.appendChild(charSpan);
-            charDiv.appendChild(copyBtn);
-            charDiv.appendChild(deleteBtn);
-            charListEl.appendChild(charDiv);
+    const letters = Object.keys(characters).sort();
+    letters.forEach(letter => {
+        const block = document.createElement("div");
+        block.className = "letter-block";
+        const title = document.createElement("h3");
+        title.textContent = letter;
+        block.appendChild(title);
+
+        characters[letter].forEach((char, index) => {
+            const item = document.createElement("div");
+            item.className = "char-item";
+            item.innerHTML = `<span>${char}</span>
+                <div class="char-buttons">
+                    <button onclick="copyCharacter('${char}')">Copy</button>
+                    <button onclick="deleteCharacter('${letter}', ${index})">Delete</button>
+                </div>`;
+            block.appendChild(item);
         });
-    }
 
-    function copyToClipboard(text) {
-        navigator.clipboard.writeText(text).then(() => {
-            alert(`Copied: ${text}`);
-        });
-    }
-
-    function deleteCharacter(char) {
-        characters = characters.filter(c => c !== char);
-        renderCharacters();
-    }
+        section.appendChild(block);
+    });
+}
 </script>
 
 </body>
