@@ -1,72 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Character List</title>
 <style>
-  body {
-    background: white;
-    font-family: sans-serif;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 10px;
-  }
-
-  .card {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 10px;
-    position: relative;
-    text-align: center;
-    font-size: 2rem;
-    background: white;
-  }
-
-  .card-buttons {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    display: flex;
-    gap: 5px;
-  }
-
-  .card-buttons button {
-    background: #eee;
-    border: none;
-    padding: 3px 5px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    border-radius: 4px;
-  }
-
-  .card input[type="checkbox"] {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-  }
+    body {
+        font-family: sans-serif;
+        margin: 20px;
+        background: white;
+    }
+    #charList {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    .char-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border: 1px solid #ccc;
+        padding: 5px 10px;
+        cursor: pointer;
+        background: #f8f8f8;
+        border-radius: 5px;
+    }
+    .char-symbol {
+        font-size: 20px;
+    }
+    .char-code {
+        font-size: 12px;
+        color: gray;
+    }
 </style>
+</head>
+<body>
 
-<div class="grid">
-  <div class="card">
-    <input type="checkbox">
-    <div class="card-buttons">
-      <button>Edit</button>
-      <button>Del</button>
-    </div>
-    🐱
-  </div>
-  <div class="card">
-    <input type="checkbox">
-    <div class="card-buttons">
-      <button>Edit</button>
-      <button>Del</button>
-    </div>
-    🐶
-  </div>
-  <div class="card">
-    <input type="checkbox">
-    <div class="card-buttons">
-      <button>Edit</button>
-      <button>Del</button>
-    </div>
-    🐻
-  </div>
-</div>
+<h2>Character List</h2>
+
+<textarea id="charInput" rows="3" placeholder="Paste characters here..."></textarea><br>
+<button id="addBtn">Add Characters</button>
+
+<div id="charList"></div>
+
+<script>
+    const charListDiv = document.getElementById("charList");
+    const addBtn = document.getElementById("addBtn");
+    const charInput = document.getElementById("charInput");
+
+    let characters = JSON.parse(localStorage.getItem("characters")) || [];
+
+    function renderList() {
+        charListDiv.innerHTML = "";
+        characters.forEach((char, index) => {
+            const div = document.createElement("div");
+            div.className = "char-item";
+            div.innerHTML = `
+                <span class="char-symbol">${char}</span>
+                <span class="char-code">U+${char.codePointAt(0).toString(16).toUpperCase().padStart(4,"0")}</span>
+            `;
+            div.addEventListener("click", () => {
+                if (confirm(`Delete "${char}"?`)) {
+                    characters.splice(index, 1);
+                    saveList();
+                }
+            });
+            charListDiv.appendChild(div);
+        });
+    }
+
+    function saveList() {
+        localStorage.setItem("characters", JSON.stringify(characters));
+        renderList();
+    }
+
+    addBtn.addEventListener("click", () => {
+        const text = charInput.value.trim();
+        if (!text) return;
+        const newChars = [...text].filter(c => !characters.includes(c) && c.trim() !== "");
+        if (newChars.length > 0) {
+            characters = [...characters, ...newChars];
+            saveList();
+        }
+        charInput.value = "";
+    });
+
+    renderList();
+</script>
+
+</body>
+</html>
